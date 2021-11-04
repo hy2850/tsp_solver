@@ -1,6 +1,6 @@
-from population import Population
 import visualize
 import matplotlib.pyplot as plt
+import math
 
 def getInput(fname, CITIES):
 	with open(fname, "r") as f:
@@ -17,6 +17,28 @@ def getInput(fname, CITIES):
 
 		print(len(CITIES)) # DBG
 
+def dist(city1, city2):
+	X = 0
+	Y = 1
+	c1_pos = config.CITIES[city1]
+	c2_pos = config.CITIES[city2]
+	return math.sqrt((c1_pos[X] - c2_pos[X]) ** 2 + (c1_pos[Y] - c2_pos[Y]) ** 2)
+# res = dist(1, 2)
+# print(res)
+
+def getFitness(path):
+	fitness = 0
+	for idx in range(1, config.TOTAL_CITIES):
+		fitness += dist(path[idx], path[idx - 1])
+	return fitness
+
+def TwoOpt(path, i, j):
+	new_path = path[:i]
+	new_path += list(reversed(path[i:j+1]))
+	new_path += path[j+1:]
+	return new_path
+
+# TODO - config 없애기
 import config
 import random
 
@@ -27,25 +49,35 @@ if __name__ == '__main__':
 	config.POP_SIZE = 100 # -p option
 	# print(config.POP_SIZE) # DBG
 
-
-	pop = Population()
+	path = [n for n in range(1, config.TOTAL_CITIES + 1)]
+	random.shuffle(path)
 
 	gen = 0
+	curFitness = getFitness(path)
+	updated = False
 	while True:
-		pop.getPopulationFitness()
-
+		updated = False
 		gen += 1
-		print(f'Gen {gen} : {pop.fitsum/config.POP_SIZE}')
+		print(f'Gen {gen} : {curFitness}')
 
-		pop.selectParentTournament(10)
+		for city1 in range(1, config.TOTAL_CITIES+1):
+			for city2 in range(city1+1, config.TOTAL_CITIES+1):
+				new_path = TwoOpt(path, city1, city2)
+				newFitness = getFitness(new_path)
+				if curFitness > newFitness:
+					path = new_path
+					curFitness = newFitness
+					print(f"[Update] {city1} - {city2} better")
+					updated = True
+					break
+				print(f"{city1} - {city2} worse")
 
-		pop.produceOffspring()
+			if updated:
+				break
+		else:
+			break
 
-		pop.generationSelection(config.POP_SIZE//2)
-
-		pop.printPop()
-
-		if gen%5 == 0:
-			visualize.drawCities()
-			visualize.drawPaths(pop.parentPop[0]) # best indiv so far
-			plt.show()
+		# if gen%100 == 0:
+		# 	visualize.drawCities()
+		# 	visualize.drawPaths(path)
+		# 	plt.show()
