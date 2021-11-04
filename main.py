@@ -1,4 +1,6 @@
 from population import Population
+import visualize
+import matplotlib.pyplot as plt
 
 def getInput(fname, CITIES):
 	with open(fname, "r") as f:
@@ -17,12 +19,14 @@ def getInput(fname, CITIES):
 
 import config
 import random
+
 if __name__ == '__main__':
 	random.seed(None)
 
 	getInput("rl11849.tsp", config.CITIES)
 	config.POP_SIZE = 100 # -p option
 	# print(config.POP_SIZE) # DBG
+
 
 	pop = Population()
 
@@ -33,10 +37,15 @@ if __name__ == '__main__':
 		gen += 1
 		print(f'Gen {gen} : {pop.fitsum/config.POP_SIZE}')
 
-		pop.selectParentTournament(1)
+		pop.selectParentTournament(10)
 
 		pop.produceOffspring()
 
-		pop.generationSelection(config.POP_SIZE)
+		pop.generationSelection(config.POP_SIZE//2)
 
 		pop.printPop()
+
+		if gen%5 == 0:
+			visualize.drawCities()
+			visualize.drawPaths(pop.parentPop[0]) # best indiv so far
+			plt.show()
