@@ -12,8 +12,7 @@ def drawCities():
 	# plt.show()
 
 # @args indiv : Individual instance with path info
-def drawPaths(indiv):
-	path = indiv.path
+def drawPaths(path):
 	for idx in range(1, config.TOTAL_CITIES):
 		x1, y1 = config.CITIES[path[idx]]
 		x2, y2 = config.CITIES[path[idx - 1]]
