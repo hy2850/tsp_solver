@@ -1,6 +1,17 @@
 import visualize
 import matplotlib.pyplot as plt
 import math
+import time
+
+def timing(f):
+    def wrap(*args, **kwargs):
+        time1 = time.time()
+        ret = f(*args, **kwargs)
+        time2 = time.time()
+        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
+
+        return ret
+    return wrap
 
 INF = int(1e9)
 
@@ -17,7 +28,7 @@ def getInput(fname, CITIES):
 			CITIES[N] = (x, y)
 			inp = f.readline().split()
 
-		print(len(CITIES)) # DBG
+		print(f"Total number of cities : {len(CITIES)}") # DBG
 
 def dist(city1, city2):
 	X = 0
@@ -25,16 +36,24 @@ def dist(city1, city2):
 	c1_pos = config.CITIES[city1]
 	c2_pos = config.CITIES[city2]
 	return math.sqrt((c1_pos[X] - c2_pos[X]) ** 2 + (c1_pos[Y] - c2_pos[Y]) ** 2)
+
+# Squared distance
+def distSq(city1, city2):
+	X = 0
+	Y = 1
+	c1_pos = config.CITIES[city1]
+	c2_pos = config.CITIES[city2]
+	return (c1_pos[X] - c2_pos[X]) ** 2 + (c1_pos[Y] - c2_pos[Y]) ** 2
 # res = dist(1, 2)
 # print(res)
 
 def getRandomCity():
 	return random.randint(1, config.TOTAL_CITIES)
 
-def getFitness(path):
+def getFitness(path, distFunc):
 	fitness = 0
 	for idx in range(1, config.TOTAL_CITIES):
-		fitness += dist(path[idx], path[idx - 1])
+		fitness += distFunc(path[idx], path[idx - 1])
 	return fitness
 
 def TwoOpt(path, i, j):
@@ -44,8 +63,12 @@ def TwoOpt(path, i, j):
 	return new_path
 
 # O(N^2)
+@timing
 def nearestNeighbors():
-	available = {n for n in range(1, config.TOTAL_CITIES+1)}
+	print("Initialization of path : using Nearest Neighbor method - find closest city") #ifdef DBG
+	print("New cities added : ")
+
+	available = {n for n in range(1, config.TOTAL_CITIES+1)} # set
 	path = []
 
 	start = getRandomCity()
@@ -57,7 +80,7 @@ def nearestNeighbors():
 		closest = -1 # next closest city to visit
 		minDist = INF
 		for nxtCity in available:
-			d = dist(now, nxtCity)
+			d = distSq(now, nxtCity) # squared distance - reduce time for sqrt
 			if d < minDist:
 				closest = nxtCity
 				minDist = d
@@ -65,6 +88,10 @@ def nearestNeighbors():
 		available.remove(closest)
 		path.append(closest)
 		now = closest
+
+		print(now, end=" ") #ifdef DBG
+		if len(available) % 50 == 0:
+			print()
 
 	return path
 
@@ -85,22 +112,23 @@ if __name__ == '__main__':
 	path = nearestNeighbors() # Improvement 1) Nearest Neighbor path init (seeding?)
 
 	gen = 0
-	curFitness = getFitness(path)
+	curFitness = getFitness(path, distSq)
 	updated = False
 	while True:
 		gen += 1
-		print(f'Gen {gen} : {curFitness}')
+		# print(f'Gen {gen} : {getFitness(path, dist)}')
+		print(f'Gen {gen} : {getFitness(path, distSq)}')
 
 		city1 = getRandomCity()
 		for city2 in range(city1+1, config.TOTAL_CITIES+1):
 			new_path = TwoOpt(path, city1, city2)
-			newFitness = getFitness(new_path)
+			newFitness = getFitness(new_path, distSq)
 			if curFitness > newFitness:
 				path = new_path
 				curFitness = newFitness
-				# print(f"[Update] {city1} - {city2} better")
+				print(f"[Update] {city1} - {city2} better") #ifdef DBG
 				break
-			# print(f"{city1} - {city2} worse")
+			print(f"{city1} - {city2} worse") #ifdef DBG
 
 
 		if gen%5000 == 0:
