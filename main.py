@@ -2,6 +2,8 @@ import visualize
 import matplotlib.pyplot as plt
 import math
 
+INF = int(1e9)
+
 def getInput(fname, CITIES):
 	with open(fname, "r") as f:
 		for _ in range(6):
@@ -26,6 +28,9 @@ def dist(city1, city2):
 # res = dist(1, 2)
 # print(res)
 
+def getRandomCity():
+	return random.randint(1, config.TOTAL_CITIES)
+
 def getFitness(path):
 	fitness = 0
 	for idx in range(1, config.TOTAL_CITIES):
@@ -38,6 +43,32 @@ def TwoOpt(path, i, j):
 	new_path += path[j+1:]
 	return new_path
 
+# O(N^2)
+def nearestNeighbors():
+	available = {n for n in range(1, config.TOTAL_CITIES+1)}
+	path = []
+
+	start = getRandomCity()
+	path.append(start)
+	available.remove(start)
+
+	now = start
+	while len(available) > 0:
+		closest = -1 # next closest city to visit
+		minDist = INF
+		for nxtCity in available:
+			d = dist(now, nxtCity)
+			if d < minDist:
+				closest = nxtCity
+				minDist = d
+
+		available.remove(closest)
+		path.append(closest)
+		now = closest
+
+	return path
+
+
 # TODO - config 없애기
 import config
 import random
@@ -49,35 +80,41 @@ if __name__ == '__main__':
 	config.POP_SIZE = 100 # -p option
 	# print(config.POP_SIZE) # DBG
 
-	path = [n for n in range(1, config.TOTAL_CITIES + 1)]
-	random.shuffle(path)
+	# path = [n for n in range(1, config.TOTAL_CITIES + 1)] # random path
+	# random.shuffle(path)
+	path = nearestNeighbors() # Improvement 1) Nearest Neighbor path init (seeding?)
 
 	gen = 0
 	curFitness = getFitness(path)
 	updated = False
 	while True:
-		updated = False
 		gen += 1
 		print(f'Gen {gen} : {curFitness}')
 
-		for city1 in range(1, config.TOTAL_CITIES+1):
-			for city2 in range(city1+1, config.TOTAL_CITIES+1):
-				new_path = TwoOpt(path, city1, city2)
-				newFitness = getFitness(new_path)
-				if curFitness > newFitness:
-					path = new_path
-					curFitness = newFitness
-					print(f"[Update] {city1} - {city2} better")
-					updated = True
-					break
-				print(f"{city1} - {city2} worse")
-
-			if updated:
+		city1 = getRandomCity()
+		for city2 in range(city1+1, config.TOTAL_CITIES+1):
+			new_path = TwoOpt(path, city1, city2)
+			newFitness = getFitness(new_path)
+			if curFitness > newFitness:
+				path = new_path
+				curFitness = newFitness
+				# print(f"[Update] {city1} - {city2} better")
 				break
-		else:
-			break
+			# print(f"{city1} - {city2} worse")
 
-		# if gen%100 == 0:
-		# 	visualize.drawCities()
-		# 	visualize.drawPaths(path)
-		# 	plt.show()
+
+		if gen%5000 == 0:
+			visualize.drawCities()
+			visualize.drawPaths(path)
+			plt.show()
+
+		# fitness (total travel dist) history
+		# Init : 86904764
+		# Gen 10000 : 56074904 (1시간)
+		# Gen 20000 : 38386621
+		# Gen 30000 : 26448120 (3시간)
+		# Gen 40000 : 18436226 (3시간)
+
+	# verbose option -
+
+# fitness 꾸준히 줄어들기는 하나, 너무 느리다. 3-opt 구현해볼까?
