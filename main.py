@@ -64,9 +64,11 @@ def TwoOpt(path, i, j):
 
 # O(N^2)
 @timing
-def nearestNeighbors():
+def nearestNeighbors(goal=10000000):
 	print("Initialization of path : using Nearest Neighbor method - find closest city") #ifdef DBG
 	print("New cities added : ")
+
+	avg_needed = goal/config.TOTAL_CITIES # need this avg distance between two cities to achieve goal
 
 	available = {n for n in range(1, config.TOTAL_CITIES+1)} # set
 	path = []
@@ -84,6 +86,9 @@ def nearestNeighbors():
 			if d < minDist:
 				closest = nxtCity
 				minDist = d
+
+				if minDist < avg_needed ** 2:
+					break
 
 		available.remove(closest)
 		path.append(closest)
@@ -109,20 +114,27 @@ if __name__ == '__main__':
 
 	# path = [n for n in range(1, config.TOTAL_CITIES + 1)] # random path
 	# random.shuffle(path)
-	path = nearestNeighbors() # Improvement 1) Nearest Neighbor path init (seeding?)
+	path = nearestNeighbors(goal=5000000) # Improvement 1) Nearest Neighbor path init (seeding?)
 
 	gen = 0
-	curFitness = getFitness(path, distSq)
+	# curFitness = getFitness(path, distSq)
+	curFitness = getFitness(path, dist)
 	updated = False
+	SEARCH_DIST_LIMIT = 7000 # two cities farther than this will be ignored
 	while True:
 		gen += 1
-		# print(f'Gen {gen} : {getFitness(path, dist)}')
-		print(f'Gen {gen} : {getFitness(path, distSq)}')
+		# print(f'Gen {gen} : {getFitness(path, distSq)}')
+		print(f'Gen {gen} : {getFitness(path, dist)}')
 
 		city1 = getRandomCity()
 		for city2 in range(city1+1, config.TOTAL_CITIES+1):
+			if dist(city1, city2) > SEARCH_DIST_LIMIT:
+				print(f"{city1} - {city2} too far - pass")
+				continue
+
 			new_path = TwoOpt(path, city1, city2)
-			newFitness = getFitness(new_path, distSq)
+			# newFitness = getFitness(new_path, distSq)
+			newFitness = getFitness(new_path, dist)
 			if curFitness > newFitness:
 				path = new_path
 				curFitness = newFitness
