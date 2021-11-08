@@ -3,12 +3,16 @@ import matplotlib.pyplot as plt
 import math
 import time
 
+import argparse
+
 def timing(f):
     def wrap(*args, **kwargs):
         time1 = time.time()
         ret = f(*args, **kwargs)
         time2 = time.time()
-        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
+
+        if VERBOSE:
+	        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
 
         return ret
     return wrap
@@ -28,7 +32,8 @@ def getInput(fname, CITIES):
 			CITIES[N] = (x, y)
 			inp = f.readline().split()
 
-		print(f"Total number of cities : {len(CITIES)}") # DBG
+		if VERBOSE:
+			print(f"Total number of cities : {len(CITIES)}") # DBG
 
 def dist(city1, city2):
 	X = 0
@@ -65,8 +70,9 @@ def TwoOpt(path, i, j):
 # O(N^2)
 @timing
 def nearestNeighbors(goal=10000000):
-	print("Initialization of path : using Nearest Neighbor method - find closest city") #ifdef DBG
-	print("New cities added : ")
+	if VERBOSE:
+		print("Initialization of path : using Nearest Neighbor method - find closest city") #ifdef DBG
+		print("New cities added : ")
 
 	avg_needed = goal/config.TOTAL_CITIES # need this avg distance between two cities to achieve goal
 
@@ -94,9 +100,10 @@ def nearestNeighbors(goal=10000000):
 		path.append(closest)
 		now = closest
 
-		print(now, end=" ") #ifdef DBG
-		if len(available) % 50 == 0:
-			print()
+		if VERBOSE:
+			print(now, end=" ") #ifdef DBG
+			if len(available) % 50 == 0:
+				print()
 
 	return path
 
@@ -106,11 +113,17 @@ import config
 import random
 
 if __name__ == '__main__':
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v', action='store_true', help='print out progress')
+	args = parser.parse_args()
+	args_dic = vars(args)
+	VERBOSE = args_dic['v']
+	print(args, type(args), args_dic)
+
 	random.seed(None)
 
 	getInput("rl11849.tsp", config.CITIES)
 	config.POP_SIZE = 100 # -p option
-	# print(config.POP_SIZE) # DBG
 
 	# path = [n for n in range(1, config.TOTAL_CITIES + 1)] # random path
 	# random.shuffle(path)
@@ -123,13 +136,15 @@ if __name__ == '__main__':
 	SEARCH_DIST_LIMIT = 7000 # two cities farther than this will be ignored
 	while True:
 		gen += 1
+		# if VERBOSE:
 		# print(f'Gen {gen} : {getFitness(path, distSq)}')
 		print(f'Gen {gen} : {getFitness(path, dist)}')
 
 		city1 = getRandomCity()
 		for city2 in range(city1+1, config.TOTAL_CITIES+1):
 			if dist(city1, city2) > SEARCH_DIST_LIMIT:
-				print(f"{city1} - {city2} too far - pass")
+				if VERBOSE:
+					print(f"{city1} - {city2} too far - pass")
 				continue
 
 			new_path = TwoOpt(path, city1, city2)
@@ -138,9 +153,12 @@ if __name__ == '__main__':
 			if curFitness > newFitness:
 				path = new_path
 				curFitness = newFitness
-				print(f"[Update] {city1} - {city2} better") #ifdef DBG
+				if VERBOSE:
+					print(f"[Update] {city1} - {city2} better") #ifdef DBG
 				break
-			print(f"{city1} - {city2} worse") #ifdef DBG
+
+			if VERBOSE:
+				print(f"{city1} - {city2} worse") #ifdef DBG
 
 
 		if gen%5000 == 0:
