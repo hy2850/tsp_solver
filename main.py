@@ -61,6 +61,15 @@ def getFitness(path, distFunc):
 		fitness += distFunc(path[idx], path[idx - 1])
 	return fitness
 
+# def TwoOpt(path, city1, city2):
+# 	i = path.index(city1)
+# 	j = path.index(city2)
+#
+# 	new_path = path[:i]
+# 	new_path += list(reversed(path[i:j+1]))
+# 	new_path += path[j+1:]
+# 	return new_path
+
 def TwoOpt(path, i, j):
 	new_path = path[:i]
 	new_path += list(reversed(path[i:j+1]))
@@ -107,6 +116,49 @@ def nearestNeighbors(goal=10000000):
 
 	return path
 
+# search thoroughly from city 1
+# No break after update
+def run_localSearch(path):
+	global curFitness
+	for city1 in range(1, config.TOTAL_CITIES + 1):
+		for city2 in range(city1 + 1, config.TOTAL_CITIES + 1):
+			# if dist(city1, city2) > SEARCH_DIST_LIMIT:
+			# 	if VERBOSE:
+			# 		print(f"{city1} - {city2} too far - pass")
+			# 	continue
+
+			new_path = TwoOpt(path, city1, city2)
+			# newFitness = getFitness(new_path, distSq)
+			newFitness = getFitness(new_path, dist)
+			if curFitness > newFitness:
+				path = new_path
+				curFitness = newFitness
+				if VERBOSE:
+					print(f"[Update] {city1} - {city2} better - fitness {curFitness}")  # ifdef DBG
+			# break
+
+			if VERBOSE:
+				print(f"{city1} - {city2} worse")  # ifdef DBG
+
+# select first city randomly
+# Break after update
+def run_localSearch_random(path):
+	global curFitness
+	city1 = getRandomCity()
+	for city2 in range(city1 + 1, config.TOTAL_CITIES + 1):
+		new_path = TwoOpt(path, city1, city2)
+		# newFitness = getFitness(new_path, distSq)
+		newFitness = getFitness(new_path, dist)
+		if curFitness > newFitness:
+			path = new_path
+			curFitness = newFitness
+			if VERBOSE:
+				print(f"[Update] {city1} - {city2} better - fitness {curFitness}")  # ifdef DBG
+			break
+
+		if VERBOSE:
+			print(f"{city1} - {city2} worse")  # ifdef DBG
+
 
 # TODO - config 없애기
 import config
@@ -127,7 +179,7 @@ if __name__ == '__main__':
 
 	# path = [n for n in range(1, config.TOTAL_CITIES + 1)] # random path
 	# random.shuffle(path)
-	path = nearestNeighbors(goal=5000000) # Improvement 1) Nearest Neighbor path init (seeding?)
+	path = nearestNeighbors(goal=10000000) # Improvement 1) Nearest Neighbor path init (seeding?)
 
 	gen = 0
 	# curFitness = getFitness(path, distSq)
@@ -138,28 +190,9 @@ if __name__ == '__main__':
 		gen += 1
 		# if VERBOSE:
 		# print(f'Gen {gen} : {getFitness(path, distSq)}')
-		print(f'Gen {gen} : {getFitness(path, dist)}')
+		# print(f'Gen {gen} : {getFitness(path, dist)}')
 
-		city1 = getRandomCity()
-		for city2 in range(city1+1, config.TOTAL_CITIES+1):
-			if dist(city1, city2) > SEARCH_DIST_LIMIT:
-				if VERBOSE:
-					print(f"{city1} - {city2} too far - pass")
-				continue
-
-			new_path = TwoOpt(path, city1, city2)
-			# newFitness = getFitness(new_path, distSq)
-			newFitness = getFitness(new_path, dist)
-			if curFitness > newFitness:
-				path = new_path
-				curFitness = newFitness
-				if VERBOSE:
-					print(f"[Update] {city1} - {city2} better") #ifdef DBG
-				break
-
-			if VERBOSE:
-				print(f"{city1} - {city2} worse") #ifdef DBG
-
+		run_localSearch_random(path)
 
 		if gen%5000 == 0:
 			visualize.drawCities()
