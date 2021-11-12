@@ -1,6 +1,3 @@
-import pandas as pd
-import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 import config
 
@@ -19,6 +16,4 @@ def drawPaths(path):
 		lineX = [min(x1, x2), max(x1, x2)]
 		lineY = [min(y1, y2), max(y1, y2)]
 		plt.plot(lineX, lineY, 'k-', alpha=0.3)
-	# plt.show()
-
-# Q. some points are not connected at all?
+	plt.show()
