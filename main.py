@@ -4,6 +4,8 @@ import math
 import time
 
 import argparse
+import csv
+import sys
 
 def timing(f):
     def wrap(*args, **kwargs):
@@ -19,21 +21,23 @@ def timing(f):
 
 INF = int(1e9)
 
-def getInput(fname, CITIES):
-	with open(fname, "r") as f:
-		for _ in range(6):
-			info = f.readline()
-			# print(info) # DBG
+# def getInput(fname, CITIES):
+# 	with open(fname, "r") as f:
+def getInput(f, CITIES):
+	# with open(sys.argv[1], "r") as f:
+	for _ in range(6):
+		info = f.readline()
+		# print(info) # DBG
 
+	inp = f.readline().split()
+	while len(inp) > 1 : # EOF
+		N, x, y = map(lambda n : int(float(n)), inp)
+		# print(N, x, y) # DBG
+		CITIES[N] = (x, y)
 		inp = f.readline().split()
-		while len(inp) > 1 : # EOF
-			N, x, y = map(lambda n : int(float(n)), inp)
-			# print(N, x, y) # DBG
-			CITIES[N] = (x, y)
-			inp = f.readline().split()
 
-		if VERBOSE:
-			print(f"Total number of cities : {len(CITIES)}") # DBG
+	if VERBOSE:
+		print(f"Total number of cities : {len(CITIES)}") # DBG
 
 def dist(city1, city2):
 	X = 0
@@ -52,8 +56,8 @@ def distSq(city1, city2):
 # res = dist(1, 2)
 # print(res)
 
-def getRandomCity():
-	return random.randint(1, config.TOTAL_CITIES)
+def getRandomCity(start = 1):
+	return random.randint(start, config.TOTAL_CITIES)
 
 def getFitness(path, distFunc):
 	fitness = 0
@@ -173,7 +177,7 @@ def run_localSearch_random(path, use_ThreeOpt):
 
 	if use_ThreeOpt:
 		while True:
-			candidates = random.sample(range(0, config.TOTAL_CITIES), 6)
+			candidates = random.sample(range(0, config.TOTAL_CITIES), 6) # select 3 segments randomly
 			candidates.sort()
 			candidate_paths = ThreeOpt(path, *candidates)
 
@@ -182,30 +186,33 @@ def run_localSearch_random(path, use_ThreeOpt):
 				config.FITNESS_CNT -= len(candidate_paths)
 			else:
 				config.FITNESS_CNT = 0
-				return
+				return path
 
-			mix_path_idx = min(range(len(ThreeOpt_fitness)), key=ThreeOpt_fitness.__getitem__)
-			new_path = candidate_paths[mix_path_idx]
-			newFitness = ThreeOpt_fitness[mix_path_idx]
+			min_path_idx = min(range(len(ThreeOpt_fitness)), key=ThreeOpt_fitness.__getitem__)
+			new_path = candidate_paths[min_path_idx]
+			newFitness = ThreeOpt_fitness[min_path_idx]
+
 			if curFitness > newFitness:
 				path = new_path
 				curFitness = newFitness
 				if VERBOSE:
 					print(f"[Update] better path config found - fitness {curFitness}")  # ifdef DBG
-				break
 			if VERBOSE:
-				print("fail - re-try")
+				print(f"Segment {candidates} worse")
 
 	else :
 		while True:
 			city1 = getRandomCity()
-			city2 = -1
-			while city1 >= city2:
-				city2 = getRandomCity()
+			city2 = getRandomCity(city1+1)
 
 			new_path = TwoOpt(path, city1, city2)
 			# newFitness = getFitness(new_path, distSq)
-			newFitness = getFitness(new_path, dist)
+			if config.FITNESS_CNT:
+				newFitness = getFitness(new_path, dist)
+				config.FITNESS_CNT -= 1
+			else:
+				return path
+
 			if curFitness > newFitness:
 				path = new_path
 				curFitness = newFitness
@@ -222,6 +229,7 @@ import random
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
+	parser.add_argument('file', type=argparse.FileType('r'))
 	parser.add_argument('-v', required=False, default=False, action='store_true', help='print out progress') # T/F flag
 	parser.add_argument('-m', required=False, default=False, action='store_true', help='add flag to use 3-opt instead of 2-opt') # T/F flag
 	parser.add_argument('-p', required=False, default=-1, type=int, help='population size (NOT USED IN LOCAL SEARCH)') # num value flag
@@ -234,7 +242,10 @@ if __name__ == '__main__':
 
 	random.seed(None)
 
-	getInput("rl11849.tsp", config.CITIES)
+
+	getInput(args.file, config.CITIES)
+	# getInput(config.CITIES)
+
 	config.POP_SIZE = args_dic['p'] # -p option - population size (NOT USED IN CURRENT METHOD - LOCAL SEARCH)
 	config.FITNESS_CNT = args_dic['f'] # -f option - fitness evaluation limit
 
@@ -242,31 +253,34 @@ if __name__ == '__main__':
 	# random.shuffle(path)
 	path = nearestNeighbors(goal=10000000) # Improvement 1) Nearest Neighbor path init (seeding?)
 
-	gen = 0
 	# curFitness = getFitness(path, distSq)
 	if config.FITNESS_CNT:
 		config.FITNESS_CNT -= 1
 		curFitness = getFitness(path, dist)
 	updated = False
 	SEARCH_DIST_LIMIT = 7000 # two cities farther than this will be ignored
-	while True:
-		gen += 1
-		# if VERBOSE:
-		# print(f'Gen {gen} : {getFitness(path, distSq)}')
-		# print(f'Gen {gen} : {getFitness(path, dist)}')
 
-		run_localSearch_random(path, USE_THREE_OPT)
+	result_path = run_localSearch_random(path, USE_THREE_OPT)
 
-		if config.FITNESS_CNT == 0:
-			# save path to csv with fitness
-			pass
+	if config.FITNESS_CNT == 0:
+		print(curFitness)
 
-		if gen%5000 == 0:
-			visualize.drawCities()
-			visualize.drawPaths(path)
-			plt.show()
+		# save path to csv with fitness
+		with open('solution.csv', 'w') as f:
+			write = csv.writer(f)
+			for city in result_path:
+				write.writerow([city])
 
-		# fitness (total travel dist) history
+	if VERBOSE:
+		print("--End of program--")
+		visualize.drawCities()
+		visualize.drawPaths(path)
+		plt.show()
+
+# fitness 꾸준히 줄어들기는 하나, 너무 느리다. 3-opt 구현해볼까?
+
+
+# fitness (total travel dist) history
 		# Init : 86904764
 		# Gen 10000 : 56074904 (1시간)
 		# Gen 20000 : 38386621
@@ -274,5 +288,3 @@ if __name__ == '__main__':
 		# Gen 40000 : 18436226 (3시간)
 
 	# verbose option -
-
-# fitness 꾸준히 줄어들기는 하나, 너무 느리다. 3-opt 구현해볼까?
