@@ -175,3 +175,11 @@ Most local search algorithms apply one of the three strategies: random, best imp
 
 https://www.frontiersin.org/articles/10.3389/frobt.2021.689908/full
 
+
+
+fitness (total travel dist) history
+Init : 86904764
+Gen 10000 : 56074904 (1시간)
+Gen 20000 : 38386621
+Gen 30000 : 26448120 (3시간)
+Gen 40000 : 18436226 (3시간)

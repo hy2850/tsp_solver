@@ -17,6 +17,7 @@ def timing(f):
         return ret
     return wrap
 
+# Get distance between two cities
 def dist(city1, city2):
 	X = 0
 	Y = 1
@@ -24,6 +25,7 @@ def dist(city1, city2):
 	c2_pos = config.CITIES[city2]
 	return math.sqrt((c1_pos[X] - c2_pos[X]) ** 2 + (c1_pos[Y] - c2_pos[Y]) ** 2)
 
+# Get 'squared' distance between two cities - to save time from math.sqrt
 def distSquared(city1, city2):
 	X = 0
 	Y = 1
@@ -32,7 +34,7 @@ def distSquared(city1, city2):
 	return (c1_pos[X] - c2_pos[X]) ** 2 + (c1_pos[Y] - c2_pos[Y]) ** 2
 
 def getRandomCity(start = 1):
-	return random.randint(start, config.TOTAL_CITIES)
+	return random.randint(start, config.TOTAL_CITIES + (-1 if start == 1 else 0))
 
 def getFitness(path, distFunc):
 	fitness = 0
@@ -68,11 +70,12 @@ def ThreeOpt(path, i1, j1 ,i2, j2, i3, j3):
 
 	return new_paths # an array of paths
 
-# O(N^2)
+# Pick closest city to explore next 
+# Naive : O(N^2) - optimized with 'avg_needed'
 @timing
 def nearestNeighbors(goal=10000000):
 	if config.VERBOSE:
-		print("Initialization of path : using Nearest Neighbor method - find closest city") #ifdef DBG
+		print("Initialization of path : using Nearest Neighbor method - find closest city")
 		print("New cities added : ")
 
 	avg_needed = goal/config.TOTAL_CITIES # desired avg distance between two cities to achieve goal fitness
@@ -89,12 +92,12 @@ def nearestNeighbors(goal=10000000):
 		closest = -1 # next closest city to visit
 		minDist = INF
 		for nxtCity in available:
-			d = distSquared(now, nxtCity) # squared distance - reduce time for sqrt
+			d = distSquared(now, nxtCity) # squared distance - save time from sqrt
 			if d < minDist:
 				closest = nxtCity
 				minDist = d
 
-				if minDist < avg_needed ** 2:
+				if minDist < avg_needed ** 2: # distance is close enough - end search
 					break
 
 		available.remove(closest)
@@ -102,7 +105,7 @@ def nearestNeighbors(goal=10000000):
 		now = closest
 
 		if config.VERBOSE:
-			print(now, end=" ") #ifdef DBG
+			print(now, end=" ")
 			if len(available) % 50 == 0:
 				print()
 
@@ -137,20 +140,19 @@ def run_localSearch(path, use_ThreeOpt=False):
 				path = new_path
 				curFitness = newFitness
 				if config.VERBOSE:
-					print(f"[Update] better path config found - fitness {curFitness}")  # ifdef DBG
-			if config.VERBOSE:
-				print(f"Segment {candidates} worse")
+					print(f"[Update] better path config found - fitness {curFitness}")
+			# if config.VERBOSE:
+			# 	print(f"Segment {candidates} worse")
 
 	else :
 		while True:
 			city1 = getRandomCity()
 			city2 = getRandomCity(city1+1)
-
 			new_path = TwoOpt(path, city1, city2)
 			if config.FITNESS_CNT:
 				newFitness = getFitness(new_path, dist)
 				config.FITNESS_CNT -= 1
-			else:
+			else: # stopping condition
 				return path
 
 			if curFitness > newFitness:
@@ -159,5 +161,5 @@ def run_localSearch(path, use_ThreeOpt=False):
 				if config.VERBOSE:
 					print(f"[Update] {city1} - {city2} better - fitness {curFitness}")  # ifdef DBG
 
-			if config.VERBOSE:
-				print(f"{city1} - {city2} worse")  # ifdef DBG
+			# if config.VERBOSE:
+			# 	print(f"{city1} - {city2} worse")
