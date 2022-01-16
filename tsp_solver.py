@@ -55,7 +55,7 @@ if __name__ == '__main__':
 	if config.VERBOSE:
 		print("--End of program--")
 
-		# print("--Start visualization--")
-		# import visualize
-		# visualize.drawCities()
-		# visualize.drawPaths(path)
+		print("--Start visualization--")
+		import visualize
+		visualize.drawCities()
+		visualize.drawPaths(path)
