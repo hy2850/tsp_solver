@@ -2,3 +2,5 @@
 __pycache__/
 *.pdf
 *.tsp
+tsp 제출물/
+solution.csv

@@ -42,7 +42,7 @@ indiv
 
 
 
-공용 global 변수 관리
+⭐️ 공용 global 변수 관리
 
 https://stackoverflow.com/questions/13034496/using-global-variables-between-files/13034908
 
@@ -80,7 +80,7 @@ local search - 2opt 구현해봄.
 
 5Nov21 
 
-### NN init 추가
+### ⭐️ NN init 추가
 
 http://tsp-basics.blogspot.com/2017/02/tour-construction-nearest-neighbor-nn.html
 
@@ -120,7 +120,7 @@ goal 1000000 - 45초 정도 걸리고, fitness 110만 정도로 시작
 
 
 
-### Python flag argument
+### ⭐️ Python flag argument
 
 argparse? sys.argv?
 https://stackoverflow.com/questions/8259001/python-argparse-command-line-flags-without-arguments
